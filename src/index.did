@@ -1,0 +1,53 @@
+type Employee = record {
+  id : text;
+  hireDate : text;
+  name : text;
+  createdAt : nat64;
+  email : text;
+  updatedAt : opt nat64;
+  department : text;
+  position : text;
+};
+type EmployeePayload = record {
+  hireDate : text;
+  name : text;
+  email : text;
+  department : text;
+  position : text;
+};
+type Salary = record {
+  id : text;
+  updated_at : opt nat64;
+  payment_date : text;
+  amount : float64;
+  created_date : nat64;
+  employee_id : text;
+};
+type SalaryPayload = record {
+  payment_date : text;
+  amount : float64;
+  employee_id : text;
+};
+type _AzleResult = variant { Ok : Employee; Err : text };
+type _AzleResult_1 = variant { Ok : Salary; Err : text };
+type _AzleResult_2 = variant { Ok : float64; Err : text };
+type _AzleResult_3 = variant { Ok : vec Employee; Err : text };
+type _AzleResult_4 = variant { Ok : vec Salary; Err : text };
+service : () -> {
+  addEmployee : (EmployeePayload) -> (_AzleResult);
+  addSalary : (SalaryPayload) -> (_AzleResult_1);
+  deleteEmployee : (text) -> (_AzleResult);
+  deleteSalary : (text) -> (_AzleResult_1);
+  getAverageSalary : () -> (_AzleResult_2) query;
+  getEarliestSalaryByEmployee : (text) -> (_AzleResult_1) query;
+  getEmployee : (text) -> (_AzleResult) query;
+  getEmployees : () -> (_AzleResult_3) query;
+  getHighestSalaryAmountByEmployee : (text) -> (_AzleResult_2) query;
+  getLatestSalaryByEmployee : (text) -> (_AzleResult_1) query;
+  getLowestSalaryAmountByEmployee : (text) -> (_AzleResult_2) query;
+  getSalariesByEmployee : (text) -> (_AzleResult_4) query;
+  getSalary : (text) -> (_AzleResult_1) query;
+  getTotalSalaryByEmployee : (text) -> (_AzleResult_2) query;
+  updateEmployee : (text, EmployeePayload) -> (_AzleResult);
+  updateSalary : (text, SalaryPayload) -> (_AzleResult_1);
+}
