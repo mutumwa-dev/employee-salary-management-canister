@@ -6,7 +6,7 @@ type Employee = Record<{
     id: string;
     name: string;
     email: string;
-    hireDate: string;
+    hireDate: Date;
     department: string;
     position: string;
     createdAt: nat64;
@@ -16,7 +16,7 @@ type Employee = Record<{
 type EmployeePayload = Record<{
     name: string;
     email: string;
-    hireDate: string;
+    hireDate: Date;
     department: string;
     position: string;
 }>;
@@ -26,7 +26,7 @@ type Salary = Record<{
     id: string;
     employee_id: string;
     amount: number;
-    payment_date: string;
+    payment_date: Date;
     created_date: nat64;
     updated_at: Opt<nat64>;
 }>;
@@ -34,19 +34,25 @@ type Salary = Record<{
 type SalaryPayload = Record<{
     employee_id: string;
     amount: number;
-    payment_date: string;
+    payment_date: Date;
 }>;
 
 // Create a map to store employee records
 const employeeStorage = new StableBTreeMap<string, Employee>(0, 44, 1024);
 const salaryStorage = new StableBTreeMap<string, Salary>(1, 44, 1024);
 
+// Function to validate email
+function validateEmail(email: string): boolean {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
+
 // Function to add a new employee
 $update;
 export function addEmployee(payload: EmployeePayload): Result<Employee, string> {
     // Input validation
-    if (!payload || !payload.name || !payload.email || !payload.hireDate || !payload.department || !payload.position) {
-        return Result.Err("Invalid employee payload. All fields are required.");
+    if (!payload || !payload.name || !validateEmail(payload.email) || !payload.hireDate || !payload.department || !payload.position) {
+        return Result.Err("Invalid employee payload. All fields are required and the email must be valid.");
     }
 
     const employee: Employee = { id: uuidv4(), createdAt: ic.time(), updatedAt: Opt.None, ...payload };
@@ -61,8 +67,8 @@ export function updateEmployee(id: string, payload: EmployeePayload): Result<Emp
     if (!id) {
         return Result.Err("Invalid employee ID.");
     }
-    if (!payload || Object.keys(payload).length === 0) {
-        return Result.Err("Invalid payload. At least one field must be provided for update.");
+    if (!payload || Object.keys(payload).length === 0 || (payload.email && !validateEmail(payload.email))) {
+        return Result.Err("Invalid payload. At least one field must be provided for update and the email must be valid.");
     }
 
     return match(employeeStorage.get(id), {
@@ -151,21 +157,24 @@ export function getSalary(id: string): Result<Salary, string> {
     });
 }
 
+// Helper function to get salaries by employee ID
+function getSalariesByEmployeeId(employeeId: string): Vec<Salary> {
+    return salaryStorage
+        .values()
+        .filter(salary => salary.employee_id === employeeId);
+}
+
 // Function to get all salaries for an employee
 $query;
 export function getSalariesByEmployee(employeeId: string): Result<Vec<Salary>, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
-        .filter(salary => salary.employee_id === employeeId);
+    const salariesByEmployee = getSalariesByEmployeeId(employeeId);
     return Result.Ok(salariesByEmployee);
 }
 
 // Function to get total salary paid to an employee
 $query;
 export function getTotalSalaryByEmployee(employeeId: string): Result<number, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
-        .filter(salary => salary.employee_id === employeeId);
+    const salariesByEmployee = getSalariesByEmployeeId(employeeId);
     const totalSalary = salariesByEmployee.reduce((acc, curr) => acc + curr.amount, 0);
     return Result.Ok(totalSalary);
 }
@@ -185,9 +194,7 @@ export function getAverageSalary(): Result<number, string> {
 // Function to get the latest salary for an employee
 $query;
 export function getLatestSalaryByEmployee(employeeId: string): Result<Salary, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
-        .filter(salary => salary.employee_id === employeeId);
+    const salariesByEmployee = getSalariesByEmployeeId(employeeId);
     if (salariesByEmployee.length === 0) {
         return Result.Err(`No salary records found for employee with ID ${employeeId}`);
     }
@@ -198,9 +205,7 @@ export function getLatestSalaryByEmployee(employeeId: string): Result<Salary, st
 // Function to get the earliest salary for an employee
 $query;
 export function getEarliestSalaryByEmployee(employeeId: string): Result<Salary, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
-        .filter(salary => salary.employee_id === employeeId);
+    const salariesByEmployee = getSalariesByEmployeeId(employeeId);
     if (salariesByEmployee.length === 0) {
         return Result.Err(`No salary records found for employee with ID ${employeeId}`);
     }
@@ -211,9 +216,7 @@ export function getEarliestSalaryByEmployee(employeeId: string): Result<Salary, 
 // Function to get the highest salary amount for an employee
 $query;
 export function getHighestSalaryAmountByEmployee(employeeId: string): Result<number, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
-        .filter(salary => salary.employee_id === employeeId);
+    const salariesByEmployee = getSalariesByEmployeeId(employeeId);
     if (salariesByEmployee.length === 0) {
         return Result.Err(`No salary records found for employee with ID ${employeeId}`);
     }
@@ -224,8 +227,7 @@ export function getHighestSalaryAmountByEmployee(employeeId: string): Result<num
 // Function to get the lowest salary amount for an employee
 $query;
 export function getLowestSalaryAmountByEmployee(employeeId: string): Result<number, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
+    const salariesByEmployee = getSalariesByEmployee.values()
         .filter(salary => salary.employee_id === employeeId);
     if (salariesByEmployee.length === 0) {
         return Result.Err(`No salary records found for employee with ID ${employeeId}`);
@@ -235,6 +237,8 @@ export function getLowestSalaryAmountByEmployee(employeeId: string): Result<numb
 }
 
 // A workaround to make the uuid package work with Azle
+// Note: This is not an ideal solution as it modifies the global scope and might have unintended consequences in complex applications.
+// It's recommended to explore alternative approaches for using the uuid package or generating random IDs securely in Azle.
 globalThis.crypto = {
     // @ts-ignore
     getRandomValues: () => {
