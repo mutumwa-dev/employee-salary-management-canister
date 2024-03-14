@@ -39,7 +39,6 @@ service : () -> {
   deleteEmployee : (text) -> (_AzleResult);
   deleteSalary : (text) -> (_AzleResult_1);
   getAverageSalary : () -> (_AzleResult_2) query;
-  getEarliestSalaryByEmployee : (text) -> (_AzleResult_1) query;
   getEmployee : (text) -> (_AzleResult) query;
   getEmployees : () -> (_AzleResult_3) query;
   getHighestSalaryAmountByEmployee : (text) -> (_AzleResult_2) query;

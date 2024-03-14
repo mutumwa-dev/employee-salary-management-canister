@@ -195,19 +195,6 @@ export function getLatestSalaryByEmployee(employeeId: string): Result<Salary, st
     return Result.Ok(latestSalary);
 }
 
-// Function to get the earliest salary for an employee
-$query;
-export function getEarliestSalaryByEmployee(employeeId: string): Result<Salary, string> {
-    const salariesByEmployee = salaryStorage
-        .values()
-        .filter(salary => salary.employee_id === employeeId);
-    if (salariesByEmployee.length === 0) {
-        return Result.Err(`No salary records found for employee with ID ${employeeId}`);
-    }
-    const earliestSalary = salariesByEmployee.reduce((earliest, current) => earliest.payment_date < current.payment_date ? earliest : current);
-    return Result.Ok(earliestSalary);
-}
-
 // Function to get the highest salary amount for an employee
 $query;
 export function getHighestSalaryAmountByEmployee(employeeId: string): Result<number, string> {
